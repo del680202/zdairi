@@ -140,9 +140,9 @@ def fetch_paragraph_status(api_url, notebook_id, paragraph_id):
     r = requests.get("%s/api/notebook/%s/paragraph/%s" % (api_url, notebook_id, paragraph_id))
     return build_api_result(r)
 
-def run_paragraph_job(api_url, notebook_id, paragraph_id, parameters={}):
+def run_paragraph_job(api_url, notebook_id, paragraph_id, parameters):
     r = requests.post("%s/api/notebook/job/%s/%s" % (api_url, notebook_id, paragraph_id),
-                      data = parameters)
+                      json = parameters)
     ret, status_code, json_context = fetch_paragraph_status(api_url, notebook_id, paragraph_id)
     while ret and json_context['body']['status'] in ['RUNNING', 'PENDING']:
         if not ret:
@@ -152,21 +152,21 @@ def run_paragraph_job(api_url, notebook_id, paragraph_id, parameters={}):
     if json_context['body']['status'] != 'FINISHED':
         raise Exception(json_context['body']['result']['msg'])
 
-def run_notebook_in_order(api_url, notebook_id):
+def run_notebook_in_order(api_url, notebook_id, parameters):
     ret, status_code, json_context = get_job_status_list(api_url, notebook_id)
     for job in json_context['body']:
-        run_paragraph_job(api_url, notebook_id, job['id'])
+        run_paragraph_job(api_url, notebook_id, job['id'], parameters)
 
 class Usage(Exception):
     def __init__(self, msg):
         self.msg = msg
 
 #command name :  (notebook handler, paragraph handler)
-notebook_commands = {'run': (run_notebook_in_order, run_paragraph_job),
-                     'print': (print_notebook, None),
+notebook_commands = {'print': (print_notebook, None),
                      'delete': (delete_notebook, None)}
-create_commands = {'create': (create_notebook, None)}
-save_commands = {'save': (save_notebook, None)}
+run_commands      = {'run': (run_notebook_in_order, run_paragraph_job)}
+create_commands   = {'create': (create_notebook, None)}
+save_commands     = {'save': (save_notebook, None)}
 
 def process_create_command(argv, command, commands):
     notebook_file = None
@@ -275,6 +275,39 @@ def process_notebook_command(argv, command, commands):
         paragraph_id = build_available_paragraph_id(api_url, notebook_id, paragraph_id)
         commands[command][1](api_url, notebook_id, paragraph_id)
 
+
+def process_run_command(argv, command, commands):
+    notebook_id = None
+    paragraph_id = None
+    api_url = None
+    parameters = {}
+    try:
+        opts, args = getopt.getopt(argv[2:], "h", ["help", "url=", "notebook=", "paragraph=", "parameters="])
+    except getopt.error, msg:
+        raise Usage(msg)
+    # option processing
+    for option, value in opts:
+        if option in ("-h", "--help"):
+            raise Usage(help_message)
+        if option in ("--url"):
+            api_url = value
+        if option in ("--notebook"):
+            notebook_id = value
+        if option in ("--paragraph"):
+            paragraph_id = value
+        if option in ("--parameters"):
+            parameters = json.loads(value)
+
+    if api_url is None or notebook_id is None:
+        raise Usage('Illegal Argument')
+
+    notebook_id = build_available_notebook_id(api_url, notebook_id)
+    if paragraph_id is None:
+        commands[command][0](api_url, notebook_id, parameters=parameters)
+    else:
+        paragraph_id = build_available_paragraph_id(api_url, notebook_id, paragraph_id)
+        commands[command][1](api_url, notebook_id, paragraph_id, parameters=parameters)
+
 def main(argv=None):
 
     if argv is None:
@@ -285,6 +318,8 @@ def main(argv=None):
             process_notebook_command(argv, command, notebook_commands)
         elif command in create_commands:
             process_create_command(argv, command, create_commands)
+        elif command in run_commands:
+            process_run_command(argv, command, run_commands)
         elif command in save_commands:
             process_save_command(argv, command, save_commands)
         else:

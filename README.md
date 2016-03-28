@@ -20,7 +20,7 @@ Support commands:
 
 Run zeppelin notebook/paragraph by id of name
 ```
-zdairi run --url ${zeppelin_url} --notebook ${notebook_id|notebook_name} [--paragraph ${paragraph_id|paragraph_name}]
+zdairi run --url ${zeppelin_url} --notebook ${notebook_id|notebook_name} [--paragraph ${paragraph_id|paragraph_name}] [--parameters json]
 ```
 
 Print zeppelin notebook as JSON

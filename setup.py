@@ -28,7 +28,7 @@ classifiers = [
 
 setup(
     name                = 'zdairi',
-    version             = '0.2',
+    version             = '0.3',
     description         = 'Zeppelin CLI tool for wrapper zeppelin REST API',
     long_description    = open('README.md').read().strip(),
     author              = 'Terrence Chin',

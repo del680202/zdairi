@@ -13,6 +13,9 @@ import time
 from datetime import datetime, timedelta
 
 
+HTTP_HEADER={'Connection':'close'}
+
+
 #Api call will return ret(True, False) and result(status_code, JSON)
 notebook_left = '# '
 paragraph_title_left = '#' * 60 + ' ' * 3
@@ -137,16 +140,17 @@ def print_notebook(api_url, notebook_id):
     print json.dumps(json_context['body'], indent=4, sort_keys=True)
 
 def fetch_paragraph_status(api_url, notebook_id, paragraph_id):
-    r = requests.get("%s/api/notebook/%s/paragraph/%s" % (api_url, notebook_id, paragraph_id))
+    r = requests.get("%s/api/notebook/%s/paragraph/%s" % (api_url, notebook_id, paragraph_id), headers=HTTP_HEADER)
     return build_api_result(r)
 
 def run_paragraph_job(api_url, notebook_id, paragraph_id, parameters):
     r = requests.post("%s/api/notebook/job/%s/%s" % (api_url, notebook_id, paragraph_id),
-                      json = parameters)
+                      json = parameters, headers=HTTP_HEADER)
     ret, status_code, json_context = fetch_paragraph_status(api_url, notebook_id, paragraph_id)
     while ret and json_context['body']['status'] in ['RUNNING', 'PENDING']:
         if not ret:
             raise Exception('status=%s' % status_code)
+        time.sleep(1)
         ret, status_code, json_context = fetch_paragraph_status(api_url, notebook_id, paragraph_id)
     print 'status=%s, notebook=%s, paragraph=%s' % (json_context['body']['status'], notebook_id, paragraph_id)
     if json_context['body']['status'] != 'FINISHED':

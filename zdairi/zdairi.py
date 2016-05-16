@@ -21,6 +21,49 @@ notebook_left = '# '
 paragraph_title_left = '#' * 60 + ' ' * 3
 paragraph_title_right = ' ' * 3 + '#' * 60
 
+class Usage(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+
+
+def restart_interpreter(api_url, ids):
+    for id in ids:
+        r = requests.put("%s/api/interpreter/setting/restart/%s" % (api_url, id))
+        ret, status_code, json_context = build_api_result(r)
+        if ret:
+            print "Restart interpreter: %s" % id
+        else:
+           raise Exception('status_code:%s' % status_code)
+
+
+def list_interpreter(api_url):
+    '''
+        Output:
+        [(id, name), (id, name)...]
+    '''
+    result = []
+    r = requests.get("%s/api/interpreter/setting" % api_url)
+    ret, status_code, json_context = build_api_result(r)
+    if ret:
+       for interpreter_setting in json_context['body']:
+           result.append((interpreter_setting['id'], interpreter_setting['name']))
+    else:
+       raise Exception('status_code:%s' % status_code)
+    return result
+
+
+def build_available_interpreter_id(api_url, interpreter_id):
+    for id, name in list_interpreter(api_url):
+        if interpreter_id == name:
+            interpreter_id = id
+            break 
+    return interpreter_id
+
+
+def build_all_interpretes_ids(api_url):
+    return [id for id,name in list_interpreter(api_url)]
+
+
 def build_api_result(response):
     if response.status_code == 200 or response.status_code == 201:
         return True, response.status_code, response.json()
@@ -139,9 +182,11 @@ def print_notebook(api_url, notebook_id):
     json_context = get_notebook(api_url, notebook_id)
     print json.dumps(json_context['body'], indent=4, sort_keys=True)
 
+
 def fetch_paragraph_status(api_url, notebook_id, paragraph_id):
     r = requests.get("%s/api/notebook/%s/paragraph/%s" % (api_url, notebook_id, paragraph_id), headers=HTTP_HEADER)
     return build_api_result(r)
+
 
 def run_paragraph_job(api_url, notebook_id, paragraph_id, parameters):
     r = requests.post("%s/api/notebook/job/%s/%s" % (api_url, notebook_id, paragraph_id),
@@ -156,21 +201,12 @@ def run_paragraph_job(api_url, notebook_id, paragraph_id, parameters):
     if json_context['body']['status'] != 'FINISHED':
         raise Exception(json_context['body']['result']['msg'])
 
+
 def run_notebook_in_order(api_url, notebook_id, parameters):
     ret, status_code, json_context = get_job_status_list(api_url, notebook_id)
     for job in json_context['body']:
         run_paragraph_job(api_url, notebook_id, job['id'], parameters)
 
-class Usage(Exception):
-    def __init__(self, msg):
-        self.msg = msg
-
-#command name :  (notebook handler, paragraph handler)
-notebook_commands = {'print': (print_notebook, None),
-                     'delete': (delete_notebook, None)}
-run_commands      = {'run': (run_notebook_in_order, run_paragraph_job)}
-create_commands   = {'create': (create_notebook, None)}
-save_commands     = {'save': (save_notebook, None)}
 
 def process_create_command(argv, command, commands):
     notebook_file = None
@@ -312,6 +348,45 @@ def process_run_command(argv, command, commands):
         paragraph_id = build_available_paragraph_id(api_url, notebook_id, paragraph_id)
         commands[command][1](api_url, notebook_id, paragraph_id, parameters=parameters)
 
+
+def process_restart_command(argv, command, commands):
+    api_url = None
+    interpreter_id = None
+    try:
+        opts, args = getopt.getopt(argv[2:], "h", ["help", "url=", "interpreter="])
+    except getopt.error, msg:
+        raise Usage(msg)
+    # option processing
+    for option, value in opts:
+        if option in ("-h", "--help"):
+            raise Usage(help_message)
+        if option in ("--url"):
+            api_url = value
+        if option in ("--interpreter"):
+            interpreter_id = value
+
+    if api_url is None:
+        raise Usage('Illegal Argument')
+
+    interpreter_ids = []
+    if interpreter_id is None:
+        interpreter_ids = build_all_interpretes_ids(api_url)
+    else:
+        interpreter_id = build_available_interpreter_id(api_url, interpreter_id)
+        if interpreter_id is not None:
+            interpreter_ids.append(interpreter_id)
+    restart_interpreter(api_url, interpreter_ids)
+
+
+#command name :  (notebook handler, paragraph handler)
+notebook_commands = {'print': (print_notebook, None),
+                     'delete': (delete_notebook, None)}
+run_commands      = {'run': (run_notebook_in_order, run_paragraph_job)}
+create_commands   = {'create': (create_notebook, None)}
+save_commands     = {'save': (save_notebook, None)}
+restart_commands  = {'restart_interpreter': restart_interpreter}
+
+
 def main(argv=None):
 
     if argv is None:
@@ -326,6 +401,8 @@ def main(argv=None):
             process_run_command(argv, command, run_commands)
         elif command in save_commands:
             process_save_command(argv, command, save_commands)
+        elif command in restart_commands:
+            process_restart_command(argv, command, restart_commands)
         else:
             raise Usage('Unknown command: %s' % command)
 

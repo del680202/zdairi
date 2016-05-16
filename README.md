@@ -17,6 +17,7 @@ Support commands:
 * save
 * print
 * run
+* restart_interpreter
 
 Run zeppelin notebook/paragraph by id of name
 ```
@@ -90,7 +91,12 @@ Delete zeppelin notebook by notebook_id or notebook_name
 zdairi delete --url ${zeppelin_url} --notebook ${notebook_id|notebook_name}
 ```
 
-save zeppelin notebook as xxx.np
+Save zeppelin notebook as xxx.np
 ```
 zdairi save --url ${zeppelin_url} --notebook ${notebook_id|notebook_name} --savepath ${filepath}
+```
+
+Restart zeppelin interpreter
+```
+zdairi restart_interpreter --url ${zeppelin_url} --interpreter ${interpreter_id|interpreter_name}
 ```

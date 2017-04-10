@@ -1,37 +1,96 @@
 # zdairi
-zdairi is zeppelin CLI tool
+zdairi is zeppelin CLI tool which wrapper zeppelin REST API for control notebook and interpreter.
 
-Zeppelin REST API. see https://zeppelin.incubator.apache.org/docs/0.5.6-incubating/rest-api/rest-notebook.html
+Zeppelin REST API. see https://zeppelin.apache.org/docs/0.7.0/rest-api/rest-notebook.html
+
+## Support version
+
+* Zeppelin 0.7
+
+## Prerequisites
+
+* Python 2.7
 
 # Install
 python setup.py install
 or
 pip install zdairi
 
+# Configuration
+
+Using zdari with yaml format config.
+```bash
+$ zdairi COMMAND                      #Using default path  '~/.zdari.yml'
+$ zdairi -f /tmp/zdari.yml COMMAND    #Using specified path
+```
+
+Config example:
+```
+zeppelin_url: http://your_zeppelin_url  # Required
+# Options
+zeppelin_auth: true  #Default is false
+zeppelin_user: user_name
+zeppelin_password: user_password
+
+```
+We support specified user to login zeppelin.
+
 # Usage
 
 Support commands:
 
-* create
-* delete
-* save
-* print
-* run
-* restart_interpreter
+* Notebook
+  * list
+  * run
+  * print
+  * create
+  * delete
+  * save
+
+* Interpreter
+  * list
+  * restart
+
+
+## Notebook commands
+
+
+### LIST command
+
+List notebooks id and name
+
+```
+$ zdairi notebook list
+```
+
+Output example
+```
+id:[2C3XP3FS1], name:[my notebook1]
+id:[2C9327A66], name:[my notebook2]
+id:[2CFGUBJX2], name:[my notebook3]
+
+```
+
+
+### RUN command
 
 Run zeppelin notebook/paragraph by id of name
 ```
-zdairi run --url ${zeppelin_url} --notebook ${notebook_id|notebook_name} [--paragraph ${paragraph_id|paragraph_name}] [--parameters json]
+$ zdari notebook run --notebook ${notebook_id|$notebook_name} [--paragraph ${paragraph_id|$paragraph_name}] [--parameters ${json}]
 ```
+
+### PRINT command
 
 Print zeppelin notebook as JSON
 ```
-zdairi print --url ${zeppelin_url} --notebook ${notebook_id|notebook_name}
+$ zdari notebook print --notebook ${notebook_id|$notebook_name}
 ```
+
+### CREATE command
 
 Create zeppelin notebook by .json/.nb
 ```
-zdairi create --url ${zeppelin_url} --notebook ${file_path}
+$ zdari notebook create --filepath ${filepath}
 ```
 
 We support create notebook by zeppelin json format or our DSL format.
@@ -86,17 +145,38 @@ print(accum.value)
 
 ```
 
+### DELETE command
+
 Delete zeppelin notebook by notebook_id or notebook_name
 ```
-zdairi delete --url ${zeppelin_url} --notebook ${notebook_id|notebook_name}
+$ zdari notebook delete --notebook ${notebook_id|$notebook_name}
 ```
 
+### SAVE command
 Save zeppelin notebook as xxx.np
 ```
-zdairi save --url ${zeppelin_url} --notebook ${notebook_id|notebook_name} --savepath ${filepath}
+$ zdari notebook save --notebook ${notebook_id|$notebook_name} --filepath $filepath
+```
+
+
+## Interpreter commands
+
+### LIST command
+List interpreters id and name
+
+```
+$ zdairi interpreter list
+```
+
+Output example
+```
+id:[2CBC3HCAX], name:[spark]
+id:[2C9CZRM8P], name:[md]
+id:[2CBBH2DVN], name:[angular]
+
 ```
 
 Restart zeppelin interpreter
 ```
-zdairi restart_interpreter --url ${zeppelin_url} --interpreter ${interpreter_id|interpreter_name}
+$ zdari interpreter restart --interpreter ${interpreter_id|$interpreter_name}
 ```

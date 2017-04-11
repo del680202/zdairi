@@ -91,8 +91,8 @@ class BaseCommand(object):
     def requests_get(self, url):
         return requests.get(url, headers=self.http_header, cookies=self.cookies)
 
-    def requests_post(self, url, data={}, parameters={}):
-        return requests.post(url, headers=self.http_header, cookies=self.cookies, data=data, json=parameters)
+    def requests_post(self, url, data={}):
+        return requests.post(url, headers=self.http_header, cookies=self.cookies, data=data)
 
     def requests_delete(self, url):
         return requests.delete(url, headers=self.http_header, cookies=self.cookies)
@@ -130,6 +130,7 @@ class NotebookCommand(BaseCommand):
         BaseCommand.__init__(self)
         self.longopts = self.longopts + ["notebook"]
         self.help_message = """zdari notebook %s --notebook ${notebook_id|$notebook_name}"""
+        self.notebook_id = None
 
     def prepare(self, argv):
         self.help_message = self.help_message % self.command_name
@@ -235,7 +236,7 @@ class RunNotebookCommand(NotebookCommand):
                                    self.parameters)
 
     def run_paragraph_job(self, notebook_id, paragraph_id, parameters):
-        r = self.requests_post("%s/api/notebook/job/%s/%s" % (self.api_url, notebook_id, paragraph_id), parameters=parameters)
+        r = self.requests_post("%s/api/notebook/job/%s/%s" % (self.api_url, notebook_id, paragraph_id), data=parameters)
         ret, status_code, json_context = self.fetch_paragraph_status(notebook_id, paragraph_id)
         while ret and json_context['body']['status'] in ['RUNNING', 'PENDING']:
             if not ret:
@@ -371,16 +372,26 @@ class SaveNotebookCommand(NotebookCommand):
 @invoker.mapping("notebook", "list")
 class ListNotebookCommand(NotebookCommand):
     def __init__(self):
-        BaseCommand.__init__(self)
+        NotebookCommand.__init__(self)
         self.longopts = self.longopts + ["list"]
-        self.help_message = """zdari notebook %s"""
 
     def prepare(self, argv):
-        pass
+        try:
+            NotebookCommand.prepare(self, argv)
+        except:
+            pass
 
     def do_execute(self):
-        for notebook in self.list_notebook():
-            print "id:[%s], name:[%s]" % (notebook['id'], notebook['name'])
+        if self.notebook_id is None:
+            for notebook in self.list_notebook():
+                print "id:[%s], name:[%s]" % (notebook['id'], notebook['name'])
+        else:
+            ret, status_code, json_context = self.get_job_status_list(self.notebook_id)
+            if ret:
+                for job in json_context['body']:
+                    print "id:[%s], status:[%s]" % (job['id'], job['status'])
+            else:
+                raise Exception('status_code:%s' % status_code)
 
 
 class InterpreterCommand(BaseCommand):

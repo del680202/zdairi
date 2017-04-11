@@ -5,6 +5,7 @@ Zeppelin REST API. see https://zeppelin.apache.org/docs/0.7.0/rest-api/rest-note
 
 ## Support version
 
+* Zeppelin 0.6
 * Zeppelin 0.7
 
 ## Prerequisites
@@ -60,15 +61,23 @@ Support commands:
 List notebooks id and name
 
 ```
-$ zdairi notebook list
+$ zdairi notebook list [--notebook ${notebook_id|notebook_name}]
 ```
 
 Output example
+
 ```
+$ zdairi notebook list 
+
 id:[2C3XP3FS1], name:[my notebook1]
 id:[2C9327A66], name:[my notebook2]
 id:[2CFGUBJX2], name:[my notebook3]
 
+```
+```
+$ zdairi notebook list --notebook "my notebook3"
+id:[20170410-113013_1011211975], status:[FINISHED]
+id:[20170410-113020_981608729], status:[FINISHED]
 ```
 
 
@@ -77,6 +86,10 @@ id:[2CFGUBJX2], name:[my notebook3]
 Run zeppelin notebook/paragraph by id of name
 ```
 $ zdari notebook run --notebook ${notebook_id|$notebook_name} [--paragraph ${paragraph_id|$paragraph_name}] [--parameters ${json}]
+```
+Example
+```
+$ zdairi notebook run --notebook mynotebook --paragraph myparagraph --parameters '{ "params":{"forecastDate":"yoo"}}'
 ```
 
 ### PRINT command

@@ -243,9 +243,12 @@ class RunNotebookCommand(NotebookCommand):
                 raise Exception('status=%s' % status_code)
             time.sleep(1)
             ret, status_code, json_context = self.fetch_paragraph_status(notebook_id, paragraph_id)
+        if not ret:
+            raise Exception('status_code:%s' % status_code)
         print 'status=%s, notebook=%s, paragraph=%s' % (json_context['body']['status'], notebook_id, paragraph_id)
         if json_context['body']['status'] != 'FINISHED':
-            raise Exception(json_context['body']['result']['msg'])
+            error = json_context['body']['status'] if 'result' not in json_context['body'] else json_context['body']['result']['msg']
+            raise Exception(error)
 
 
 @invoker.mapping("notebook", "delete")

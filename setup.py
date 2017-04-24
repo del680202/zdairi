@@ -36,7 +36,7 @@ setup(
     url                 = 'https://github.com/del680202/zdairi.git',
     license             = 'BSD',
     packages            = find_packages(),
-    install_requires    = [],
+    install_requires    = ['requests', 'PyYAML'],
     classifiers         = classifiers,
     entry_points        = {
          'console_scripts': [
